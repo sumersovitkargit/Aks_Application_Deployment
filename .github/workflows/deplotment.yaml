@@ -82,8 +82,8 @@ jobs:
     # Deploy the new Docker image to AKS
       - name: Deploy to AKS
         run: |
-          kubectl apply -f kubernetes/deploy.yml -n ns-${{input.Enviromet}}
-          kubectl rollout status deployment/my-app -n ns-${{input.Enviromet}}
+          kubectl apply -f kubernetes/deploy.yml -n ns-${{ inputs.environment-name }}
+          kubectl rollout status deployment/my-app -n ns-${{ inputs.environment-name }}
 
     # Logout from Azure CLI
       - name: Logout from Azure CLI
