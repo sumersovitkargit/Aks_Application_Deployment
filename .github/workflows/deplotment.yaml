@@ -17,7 +17,7 @@ on:
 jobs:
   # CI Job: Build and Push Docker Image to ACR
   ci:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
  
  # CD Job: Deploy to AKS
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: ci
     steps:
     # Checkout the repository
