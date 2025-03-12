@@ -67,3 +67,4 @@ jobs:
       # Logout from Azure CLI (Optional)
       - name: Logout from Azure CLI
         run: az logout
+        
