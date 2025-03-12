@@ -23,28 +23,35 @@ jobs:
           sudo systemctl start docker
           sudo systemctl enable docker
           sudo systemctl status docker
+      
       # Set up QEMU & Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Install Azure CLI (Fix for 'az: command not found')
+      # Install Azure CLI (Fixed for 'az: command not found')
       - name: Install Azure CLI
         run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/azure-cli.sources
+          curl -sL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc > /dev/null
+          echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+          sudo apt-get update
+          sudo apt-get install -y azure-cli
           az version
-          
+      
       # Log in to Azure ACR using Service Principal
       - name: Log in to Azure ACR
         run: |
           az acr login --name ${{ secrets.AZURE_REGISTRY_NAME }} \
             --username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
             --password ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+      
       - name: Build and Push Docker Image
         run: |
           docker build -t ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:${{ github.sha }} .
           docker tag ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:${{ github.sha }} ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:latest
           docker push ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:${{ github.sha }}
           docker push ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:latest
+  
   # CD Job: Deploy to AKS
   deploy:
     runs-on: self-hosted
@@ -52,12 +59,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # Install Azure CLI (Fix for 'az: command not found')
+      
+      # Install Azure CLI (Fixed for 'az: command not found')
       - name: Install Azure CLI
         run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list /etc/apt/sources.list.d/azure-cli.sources
+          curl -sL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc > /dev/null
+          echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+          sudo apt-get update
+          sudo apt-get install -y azure-cli
           az version
+      
       # Azure login using Service Principal
       - name: Azure Login
         run: |
@@ -65,6 +77,7 @@ jobs:
             -u ${{ secrets.AZURE_CLIENT_ID }} \
             -p ${{ secrets.AZURE_CLIENT_SECRET }} \
             --tenant ${{ secrets.AZURE_TENANT_ID }}
+      
       # Set up Kubernetes context for AKS
       - name: Set up Kubernetes context
         run: |
@@ -72,18 +85,26 @@ jobs:
             --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
             --name ${{ secrets.AZURE_AKS_CLUSTER }} \
             --overwrite-existing
-      # Log in to Azure Container Registry (ACR)
-      - name: Log in to ACR
+      
+      # Install kubectl with correct repo
+      - name: Install kubectl
         run: |
-          az acr login \
-            --name ${{ secrets.AZURE_REGISTRY_NAME }} \
-            --username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
-            --password ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl
+          sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo tee /etc/apt/keyrings/kubernetes-apt-keyring.asc > /dev/null
+          echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+          sudo apt-get update
+          sudo apt-get install -y kubectl
+          kubectl version --client
+      
       # Deploy the new Docker image to AKS
       - name: Deploy to AKS
         run: |
           kubectl apply -f kubernetes/deploy.yml -n ns-${{ github.event.inputs.environment-name }}
           kubectl rollout status deployment/my-app -n ns-${{ github.event.inputs.environment-name }}
+      
       # Logout from Azure CLI
       - name: Logout from Azure CLI
         run: az logout
