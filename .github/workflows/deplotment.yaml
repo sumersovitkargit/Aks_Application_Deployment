@@ -31,18 +31,10 @@ jobs:
       # Install Azure CLI (Fix for 'az: command not found')
       - name: Install Azure CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ca-certificates curl apt-transport-https lsb-release gnupg
-
-          # Remove any existing Azure CLI
-          sudo apt-get remove -y azure-cli || true
-
-          # Download and install Azure CLI
-          curl -sL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
-          echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
-          sudo apt-get update
-          sudo apt-get install -y azure-cli
-
+           curl -sL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc > /dev/null
+           echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
+           sudo apt-get update
+           sudo apt-get install -y azure-cli
            az version
           
       # Log in to Azure ACR using Service Principal
