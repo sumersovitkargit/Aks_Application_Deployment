@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       environment-name:
-        type: environment
+        type: choice
         description: 'Environment'
         required: true
         options: ['dev','uat','prod']
