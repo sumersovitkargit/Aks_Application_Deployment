@@ -1,9 +1,18 @@
 name: CI/CD Pipeline for Azure Kubernetes Service
 
+#on:
+#  push:
+#    branches:
+#      - main  # Trigger CI/CD on push to main branch
+
 on:
-  push:
-    branches:
-      - main  # Trigger CI/CD on push to main branch
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        type: environment
+        description: 'Environment'
+        required: true
+        options: ['dev','uat','prod']
 
 jobs:
   # CI Job: Build and Push Docker Image to ACR
@@ -73,11 +82,10 @@ jobs:
     # Deploy the new Docker image to AKS
       - name: Deploy to AKS
         run: |
-          kubectl apply -f kubernetes/deploy.yml
-          kubectl rollout status deployment/my-app
+          kubectl apply -f kubernetes/deploy.yml -n ns-${{input.Enviromet}}
+          kubectl rollout status deployment/my-app -n ns-${{input.Enviromet}}
 
     # Logout from Azure CLI
       - name: Logout from Azure CLI
         run: az logout
 
-        
