@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: my-app
-          image: aksdeployment.io/my-app:latest
+          image: aksdeployment.azurecr.io/my-app:latest
           ports:
             - containerPort: 80
 ---
