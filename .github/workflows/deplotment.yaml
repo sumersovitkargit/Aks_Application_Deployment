@@ -87,17 +87,17 @@ jobs:
             --overwrite-existing
       
       # Install kubectl with correct repo
-      - name: Install kubectl
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl
-          sudo rm -f /etc/apt/sources.list.d/kubernetes.list
-          sudo mkdir -p /etc/apt/keyrings
-          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo tee /etc/apt/keyrings/kubernetes-apt-keyring.asc > /dev/null
-          echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-          sudo apt-get update
-          sudo apt-get install -y kubectl
-          kubectl version --client
+      #- name: Install kubectl
+      #  run: |
+      #    sudo apt-get update
+      #    sudo apt-get install -y apt-transport-https ca-certificates curl
+      #    sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+      #    sudo mkdir -p /etc/apt/keyrings
+      #    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo tee /etc/apt/keyrings/kubernetes-apt-keyring.asc > /dev/null
+      #    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+      #    sudo apt-get update
+      #    sudo apt-get install -y kubectl
+      #    kubectl version --client
       
       # Deploy the new Docker image to AKS
       - name: Deploy to AKS
