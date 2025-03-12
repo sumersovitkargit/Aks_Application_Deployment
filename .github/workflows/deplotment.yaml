@@ -1,10 +1,5 @@
 name: CI/CD Pipeline for Azure Kubernetes Service
 
-#on:
-#  push:
-#    branches:
-#      - main  # Trigger CI/CD on push to main branch
-
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +7,7 @@ on:
         type: choice
         description: 'Environment'
         required: true
-        options: ['dev','uat','prod']
+        options: ['dev', 'uat', 'prod']
 
 jobs:
   # CI Job: Build and Push Docker Image to ACR
@@ -22,10 +17,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Ensure Docker Daemon is Running
+      - name: Start Docker Service
+        run: |
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo systemctl status docker
+
       # Set up QEMU & Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Install Azure CLI (Fix for 'az: command not found')
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az version
+          
       # Log in to Azure ACR using Service Principal
       - name: Log in to Azure ACR
         run: |
@@ -39,17 +47,16 @@ jobs:
           docker tag ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:${{ github.sha }} ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:latest
           docker push ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:${{ github.sha }}
           docker push ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io/my-app:latest
- 
- # CD Job: Deploy to AKS
+
+  # CD Job: Deploy to AKS
   deploy:
     runs-on: self-hosted
     needs: ci
     steps:
-    # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-    # Install Azure CLI (Fix for missing 'setup-azurecli' issue)
+      # Install Azure CLI (Fix for 'az: command not found')
       - name: Install Azure CLI
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
@@ -63,7 +70,7 @@ jobs:
             -p ${{ secrets.AZURE_CLIENT_SECRET }} \
             --tenant ${{ secrets.AZURE_TENANT_ID }}
 
-    # Set up Kubernetes context for AKS
+      # Set up Kubernetes context for AKS
       - name: Set up Kubernetes context
         run: |
           az aks get-credentials \
@@ -71,7 +78,7 @@ jobs:
             --name ${{ secrets.AZURE_AKS_CLUSTER }} \
             --overwrite-existing
 
-    # Log in to Azure Container Registry (ACR)
+      # Log in to Azure Container Registry (ACR)
       - name: Log in to ACR
         run: |
           az acr login \
@@ -79,13 +86,12 @@ jobs:
             --username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
             --password ${{ secrets.AZURE_REGISTRY_PASSWORD }}
 
-    # Deploy the new Docker image to AKS
+      # Deploy the new Docker image to AKS
       - name: Deploy to AKS
         run: |
-          kubectl apply -f kubernetes/deploy.yml -n ns-${{ inputs.environment-name }}
-          kubectl rollout status deployment/my-app -n ns-${{ inputs.environment-name }}
+          kubectl apply -f kubernetes/deploy.yml -n ns-${{ github.event.inputs.environment-name }}
+          kubectl rollout status deployment/my-app -n ns-${{ github.event.inputs.environment-name }}
 
-    # Logout from Azure CLI
+      # Logout from Azure CLI
       - name: Logout from Azure CLI
         run: az logout
-
