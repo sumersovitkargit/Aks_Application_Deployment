@@ -1,11 +1,14 @@
+# Use the official Nginx base image
 FROM nginx:alpine
 
-# Copy HTML and script files
+# Remove default Nginx static content
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy the HTML file to the Nginx web root directory
 COPY index.html /usr/share/nginx/html/index.html
-COPY start.sh /start.sh
 
-# Make the script executable
-RUN chmod +x /start.sh
+# Expose port 80
+EXPOSE 80
 
-# Run the start script
-CMD ["/start.sh"]
+# Start Nginx server
+CMD ["nginx", "-g", "daemon off;"]
